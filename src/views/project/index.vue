@@ -117,11 +117,13 @@
       :close-on-click-modal="false"
       @close="handleEnvDrawerClose"
     >
-      <template #extra>
+      <!-- 抽屉内容顶部操作栏：新增环境按钮 -->
+      <!-- 注意：el-drawer 没有官方 #extra 插槽，按钮需要放在默认插槽里 -->
+      <div class="env-toolbar">
         <el-button type="primary" icon="Plus" size="small" @click="openAddEnvDialog">
           新增环境
         </el-button>
-      </template>
+      </div>
 
       <!-- 环境列表 -->
       <el-table
@@ -614,5 +616,12 @@ onMounted(() => {
 /* 空数据占位符 */
 .no-data {
   color: #c0c4cc;
+}
+
+/* 环境抽屉内的顶部操作栏：按钮右对齐 */
+.env-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
 }
 </style>
