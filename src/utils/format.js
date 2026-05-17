@@ -36,3 +36,63 @@ export function relativeTime(value) {
   const d = String(date.getDate()).padStart(2, '0')
   return `${y}-${m}-${d}`
 }
+
+/**
+ * 校验字符串是否为合法 JSON 对象字符串（非数组、非 null）
+ * 空字符串 / null / undefined 视为 "未填写"，由调用方决定是否允许
+ * @param {string} text
+ * @returns {boolean}
+ */
+export function isJsonObjectString(text) {
+  if (text == null) return false
+  const t = String(text).trim()
+  if (!t) return false
+  try {
+    const obj = JSON.parse(t)
+    return obj !== null && typeof obj === 'object' && !Array.isArray(obj)
+  } catch (e) {
+    return false
+  }
+}
+
+/**
+ * 美化 JSON 字符串：能 parse 则按 2 空格缩进重新序列化，否则原样返回
+ * @param {string} text
+ * @returns {string}
+ */
+export function prettyJson(text) {
+  if (text == null) return ''
+  const t = String(text).trim()
+  if (!t) return ''
+  try {
+    return JSON.stringify(JSON.parse(t), null, 2)
+  } catch (e) {
+    return text
+  }
+}
+
+/**
+ * 计算字符串字节大小（UTF-8）
+ * @param {string} text
+ * @returns {number}
+ */
+export function byteSize(text) {
+  if (text == null) return 0
+  try {
+    return new Blob([String(text)]).size
+  } catch (e) {
+    return String(text).length
+  }
+}
+
+/**
+ * 把字节数格式化为 B / KB / MB
+ * @param {number} bytes
+ * @returns {string}
+ */
+export function formatBytes(bytes) {
+  if (!bytes && bytes !== 0) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`
+}

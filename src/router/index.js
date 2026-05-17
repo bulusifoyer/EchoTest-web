@@ -13,6 +13,7 @@ const Welcome = () => import('@/views/Welcome.vue')
 const Placeholder = () => import('@/views/Placeholder.vue')
 const Project = () => import('@/views/project/index.vue')
 const Environment = () => import('@/views/environment/index.vue')
+const ApiManagement = () => import('@/views/api/index.vue')
 
 const routes = [
   {
@@ -43,8 +44,8 @@ const routes = [
       {
         path: 'api',
         name: 'ApiManagement',
-        component: Placeholder,
-        meta: { title: '接口管理', moduleName: '接口管理与在线试调', stage: '阶段 4' }
+        component: ApiManagement,
+        meta: { title: '接口管理' }
       },
       {
         path: 'case',
