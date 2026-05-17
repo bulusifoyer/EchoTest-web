@@ -1,58 +1,44 @@
 <template>
   <div class="api-page">
-    <!-- 缺 projectId 时：空状态引导 -->
-    <div v-if="!projectId" class="empty-guide">
-      <div class="et-card empty-guide__card">
-        <el-empty description="请先从「项目管理」选择一个项目，再进入接口管理">
-          <el-button type="primary" @click="$router.push('/project')">
-            返回项目管理
-          </el-button>
-        </el-empty>
-      </div>
+    <!-- 面包屑 -->
+    <div class="et-breadcrumb">
+      <span class="link" @click="$router.push('/project')">项目管理</span>
+      <span class="sep">/</span>
+      <span>{{ projectName || '加载中...' }}</span>
+      <span class="sep">/</span>
+      <span class="cur">接口管理</span>
     </div>
 
-    <!-- 正常态 -->
-    <template v-else>
-      <!-- 面包屑 -->
-      <div class="et-breadcrumb">
-        <span class="link" @click="$router.push('/project')">项目管理</span>
-        <span class="sep">/</span>
-        <span>{{ projectName || '加载中...' }}</span>
-        <span class="sep">/</span>
-        <span class="cur">接口管理</span>
-      </div>
+    <!-- 左右分栏 -->
+    <div v-loading="loading" class="api-grid">
+      <ApiTree
+        :apis="apis"
+        :active-id="currentApi?.id"
+        @add="onAdd"
+        @select="onSelect"
+      />
 
-      <!-- 左右分栏 -->
-      <div v-loading="loading" class="api-grid">
-        <ApiTree
-          :apis="apis"
-          :active-id="currentApi?.id"
-          @add="onAdd"
-          @select="onSelect"
-        />
+      <div class="api-right">
+        <template v-if="currentApi">
+          <ApiEditor
+            :api="currentApi"
+            @delete="onDelete"
+            @updated="onApiUpdated"
+          />
+          <ApiTryRun
+            :api="currentApi"
+            :environments="environments"
+            :project-id="projectId"
+          />
+        </template>
 
-        <div class="api-right">
-          <template v-if="currentApi">
-            <ApiEditor
-              :api="currentApi"
-              @delete="onDelete"
-              @updated="onApiUpdated"
-            />
-            <ApiTryRun
-              :api="currentApi"
-              :environments="environments"
-              :project-id="projectId"
-            />
-          </template>
-
-          <div v-else class="api-right__empty et-card">
-            <el-empty description="该项目下暂无接口">
-              <el-button type="primary" :icon="Plus" @click="onAdd">立即新建</el-button>
-            </el-empty>
-          </div>
+        <div v-else class="api-right__empty et-card">
+          <el-empty description="该项目下暂无接口">
+            <el-button type="primary" :icon="Plus" @click="onAdd">立即新建</el-button>
+          </el-empty>
         </div>
       </div>
-    </template>
+    </div>
 
     <!-- 新建对话框 -->
     <ApiFormDialog
@@ -66,14 +52,13 @@
 
 <script setup>
 /**
- * 接口管理（阶段 4）
+ * 接口管理（阶段 3.5 适配）
  * 视觉对照 docs/screenshots/html/api_management.html
  *
- * 入口：/api?projectId=X
- * 数据源：
- *   - getProjectDetailAPI(projectId)
- *   - getApiDefinitionListAPI(projectId)
- *   - getEnvironmentListAPI(projectId)（试调使用）
+ * 阶段 3.5 改动：
+ *   - projectId 通过 resolveProjectId(route, projectStore) 解析（query 优先 → store fallback）
+ *   - 不再渲染"请先从项目管理选择"空状态卡：路由守卫已统一处理，无 projectId 不会进入此页
+ *   - 拉到项目详情后 syncProjectName 回填工作区 chip 名称
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -87,6 +72,8 @@ import {
   getApiDefinitionDetailAPI,
   deleteApiDefinitionAPI
 } from '@/api/apiDefinition'
+import { useProjectStore } from '@/store/project'
+import { resolveProjectId } from '@/utils/projectContext'
 
 import ApiTree from './components/ApiTree.vue'
 import ApiEditor from './components/ApiEditor.vue'
@@ -95,13 +82,10 @@ import ApiFormDialog from './components/ApiFormDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
+const projectStore = useProjectStore()
 
-// ========== query 解析 ==========
-const projectId = computed(() => {
-  const raw = route.query.projectId
-  const num = Number(raw)
-  return Number.isFinite(num) && num > 0 ? num : null
-})
+// ========== 当前 projectId（query 优先 → store fallback） ==========
+const projectId = computed(() => resolveProjectId(route, projectStore))
 
 // ========== 状态 ==========
 const projectName = ref('')
@@ -116,9 +100,16 @@ const dialogVisible = ref(false)
 async function fetchProjectName(id) {
   try {
     const proj = await getProjectDetailAPI(id)
-    projectName.value = proj?.name || ''
+    if (proj?.name) {
+      projectName.value = proj.name
+      projectStore.syncProjectName(proj.name)
+    } else {
+      projectName.value = projectStore.currentProjectName || ''
+    }
   } catch (e) {
-    projectName.value = ''
+    projectStore.clearCurrentProject()
+    ElMessage.warning('项目不存在或无权限访问')
+    router.replace('/project')
   }
 }
 
@@ -153,13 +144,10 @@ async function fetchApis(id, preselectId = null) {
 }
 
 async function loadApiDetail(id) {
-  // 列表只回基础字段（含 requestHeaders/Body？后端是 select * 直接全字段，所以可直接用）
-  // 不过为了和详情接口字段对齐，仍可走详情接口
   try {
     const detail = await getApiDefinitionDetailAPI(id)
     currentApi.value = detail
   } catch (e) {
-    // 退回列表里的对象
     currentApi.value = apis.value.find((a) => a.id === id) || null
   }
 }
@@ -189,7 +177,7 @@ async function reload(preselectId = null) {
 // 路由 query 变化时重新加载
 watch(projectId, async (id) => {
   if (!id) return
-  projectName.value = ''
+  projectName.value = projectStore.currentProjectName || ''
   apis.value = []
   environments.value = []
   currentApi.value = null
@@ -207,6 +195,7 @@ watch(projectId, async (id) => {
 
 onMounted(async () => {
   if (!projectId.value) return
+  projectName.value = projectStore.currentProjectName || ''
   loading.value = true
   try {
     await Promise.all([
@@ -233,7 +222,6 @@ function onDialogSubmitted(newId) {
 }
 
 function onApiUpdated(id) {
-  // 编辑保存后刷列表（更新条目名 / method / path 显示）+ 重新加载详情
   reload(id)
 }
 
@@ -251,7 +239,6 @@ function onDelete(api) {
       try {
         await deleteApiDefinitionAPI(api.id)
         ElMessage.success('接口已删除')
-        // 选相邻
         const idx = apis.value.findIndex((a) => a.id === api.id)
         const fallback = apis.value[idx + 1] || apis.value[idx - 1]
         currentApi.value = null
@@ -269,18 +256,6 @@ function onDelete(api) {
   min-height: calc(100vh - var(--et-header-h) - var(--et-pad-content) * 2);
   display: flex;
   flex-direction: column;
-}
-
-.empty-guide {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.empty-guide__card {
-  width: 480px;
-  padding: 40px 32px;
-  text-align: center;
 }
 
 .et-breadcrumb .link {

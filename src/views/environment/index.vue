@@ -1,52 +1,38 @@
 <template>
   <div class="env-page">
-    <!-- 缺少 projectId：空状态引导 -->
-    <div v-if="!projectId" class="empty-guide">
-      <div class="et-card empty-guide__card">
-        <el-empty description="请先从「项目管理」选择一个项目，再进入环境管理">
-          <el-button type="primary" @click="$router.push('/project')">
-            返回项目管理
-          </el-button>
+    <!-- 面包屑 -->
+    <div class="et-breadcrumb">
+      <span class="link" @click="$router.push('/project')">项目管理</span>
+      <span class="sep">/</span>
+      <span>{{ projectName || '加载中...' }}</span>
+      <span class="sep">/</span>
+      <span class="cur">环境管理</span>
+    </div>
+
+    <!-- 左右分栏 -->
+    <div v-loading="loading" class="env-grid">
+      <EnvList
+        :environments="environments"
+        :active-id="currentEnv?.id"
+        @add="onAdd"
+        @select="onSelect"
+      />
+
+      <EnvDetail
+        v-if="currentEnv"
+        :env="currentEnv"
+        :project-name="projectName"
+        @edit="onEdit"
+        @delete="onDelete"
+        @updated="reload"
+      />
+
+      <div v-else class="env-detail-empty et-card">
+        <el-empty description="该项目下暂无环境">
+          <el-button type="primary" :icon="Plus" @click="onAdd">立即新建</el-button>
         </el-empty>
       </div>
     </div>
-
-    <!-- 正常态 -->
-    <template v-else>
-      <!-- 面包屑 -->
-      <div class="et-breadcrumb">
-        <span class="link" @click="$router.push('/project')">项目管理</span>
-        <span class="sep">/</span>
-        <span>{{ projectName || '加载中...' }}</span>
-        <span class="sep">/</span>
-        <span class="cur">环境管理</span>
-      </div>
-
-      <!-- 左右分栏 -->
-      <div v-loading="loading" class="env-grid">
-        <EnvList
-          :environments="environments"
-          :active-id="currentEnv?.id"
-          @add="onAdd"
-          @select="onSelect"
-        />
-
-        <EnvDetail
-          v-if="currentEnv"
-          :env="currentEnv"
-          :project-name="projectName"
-          @edit="onEdit"
-          @delete="onDelete"
-          @updated="reload"
-        />
-
-        <div v-else class="env-detail-empty et-card">
-          <el-empty description="该项目下暂无环境">
-            <el-button type="primary" :icon="Plus" @click="onAdd">立即新建</el-button>
-          </el-empty>
-        </div>
-      </div>
-    </template>
 
     <!-- 新建/编辑对话框 -->
     <EnvFormDialog
@@ -61,18 +47,13 @@
 
 <script setup>
 /**
- * 环境管理（阶段 3）
+ * 环境管理（阶段 3.5 适配）
  * 视觉对照 docs/screenshots/html/env_management.html
  *
- * 入口：/environment?projectId=X
- * 数据源：
- *   - getProjectDetailAPI(projectId) → 面包屑显示项目名
- *   - getEnvironmentListAPI(projectId) → 左侧列表
- *
- * MVP 简化：
- *   - 不做连通性测试 / SSL / 默认环境 / 复制环境 / 健康状态
- *   - 状态点统一显示灰色"未检测"
- *   - globalHeaders 编辑由 EnvDetail 内部完成（行级表格）
+ * 阶段 3.5 改动：
+ *   - projectId 通过 resolveProjectId(route, projectStore) 解析（query 优先 → store fallback）
+ *   - 不再渲染"请先从项目管理选择"空状态卡：路由守卫已统一处理，无 projectId 不会进入此页
+ *   - 拉到项目详情后 syncProjectName 回填工作区 chip 名称
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -81,6 +62,8 @@ import { Plus } from '@element-plus/icons-vue'
 
 import { getProjectDetailAPI } from '@/api/project'
 import { getEnvironmentListAPI, deleteEnvironmentAPI } from '@/api/environment'
+import { useProjectStore } from '@/store/project'
+import { resolveProjectId } from '@/utils/projectContext'
 
 import EnvList from './components/EnvList.vue'
 import EnvDetail from './components/EnvDetail.vue'
@@ -88,13 +71,10 @@ import EnvFormDialog from './components/EnvFormDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
+const projectStore = useProjectStore()
 
-// ========== query 解析 ==========
-const projectId = computed(() => {
-  const raw = route.query.projectId
-  const num = Number(raw)
-  return Number.isFinite(num) && num > 0 ? num : null
-})
+// ========== 当前 projectId（query 优先 → store fallback） ==========
+const projectId = computed(() => resolveProjectId(route, projectStore))
 
 // ========== 状态 ==========
 const projectName = ref('')
@@ -109,9 +89,17 @@ const editingEnv = ref(null)
 async function fetchProjectName(id) {
   try {
     const proj = await getProjectDetailAPI(id)
-    projectName.value = proj?.name || ''
+    if (proj?.name) {
+      projectName.value = proj.name
+      projectStore.syncProjectName(proj.name)
+    } else {
+      projectName.value = projectStore.currentProjectName || ''
+    }
   } catch (e) {
-    projectName.value = ''
+    // 项目可能已被删 / 无权限：清掉 store 并跳回项目管理
+    projectStore.clearCurrentProject()
+    ElMessage.warning('项目不存在或无权限访问')
+    router.replace('/project')
   }
 }
 
@@ -120,7 +108,6 @@ async function fetchEnvironments(id, preselectEnvId = null) {
     const list = await getEnvironmentListAPI(id)
     environments.value = Array.isArray(list) ? list : []
 
-    // 选中策略：preselect 优先 → 当前选中保持 → 列表第一个
     if (preselectEnvId != null) {
       currentEnv.value = environments.value.find((e) => e.id === preselectEnvId) || environments.value[0] || null
     } else if (currentEnv.value) {
@@ -150,7 +137,7 @@ watch(
   projectId,
   async (id) => {
     if (!id) return
-    projectName.value = ''
+    projectName.value = projectStore.currentProjectName || ''
     environments.value = []
     currentEnv.value = null
     loading.value = true
@@ -165,9 +152,14 @@ watch(
 
 onMounted(async () => {
   if (!projectId.value) return
+  // 先用 store 缓存的名字垫一下，避免面包屑短暂"加载中"
+  projectName.value = projectStore.currentProjectName || ''
   loading.value = true
   try {
-    await Promise.all([fetchProjectName(projectId.value), fetchEnvironments(projectId.value)])
+    await Promise.all([
+      fetchProjectName(projectId.value),
+      fetchEnvironments(projectId.value)
+    ])
   } finally {
     loading.value = false
   }
@@ -189,7 +181,6 @@ function onEdit(env) {
 }
 
 function onDialogSubmitted(newId) {
-  // 新建：选中新建项；编辑：保持当前
   reload(newId || currentEnv.value?.id || null)
 }
 
@@ -212,7 +203,7 @@ function onDelete(env) {
         const idx = environments.value.findIndex((e) => e.id === env.id)
         const fallback = environments.value[idx + 1] || environments.value[idx - 1]
         const preselectId = fallback?.id ?? null
-        currentEnv.value = null // 提前清空，让 reload 选中策略走 preselect 分支
+        currentEnv.value = null
         await reload(preselectId)
       } catch (e) {
         console.error('删除环境失败:', e)
@@ -227,19 +218,6 @@ function onDelete(env) {
   min-height: calc(100vh - var(--et-header-h) - var(--et-pad-content) * 2);
   display: flex;
   flex-direction: column;
-}
-
-/* 空状态引导 */
-.empty-guide {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.empty-guide__card {
-  width: 480px;
-  padding: 40px 32px;
-  text-align: center;
 }
 
 /* 面包屑 link */

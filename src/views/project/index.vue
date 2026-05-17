@@ -33,11 +33,9 @@
         v-for="project in filteredProjects"
         :key="project.id"
         :project="project"
+        @enter="onEnter"
         @edit="onEditClick"
         @delete="onDeleteClick"
-        @open-env="goEnvironment"
-        @open-api="goApi"
-        @open-case="goCase"
       />
       <NewProjectCard @click="onCreateClick" />
     </div>
@@ -60,18 +58,13 @@
 
 <script setup>
 /**
- * 项目管理页（阶段 2 重做）
+ * 项目管理页（阶段 3.5）
  * 视觉对照 docs/screenshots/html/project_management.html
  *
- * 功能：
- *   - 网格卡片展示项目列表（前端本地搜索过滤）
- *   - 顶部「新建项目」+ 末尾虚线「+」卡片均可触发新建对话框
- *   - 卡片 ⋯ 下拉菜单：编辑 / 删除 / 跳环境/接口/用例
- *
- * MVP 简化：
- *   - 统计字段（接口数/用例数/通过率）暂以 — 占位
- *   - 不分页（与后端 list 保持一致）
- *   - 环境/接口/用例入口仅做路由跳转（带 projectId），具体页面由后续阶段实现
+ * 阶段 3.5 改动：
+ *   - 卡片主体点击 → onEnter：写入 currentProject 后跳 /environment?projectId=X
+ *   - ⋯ 下拉只剩"编辑 / 删除"，环境/接口/用例入口移到侧栏统一处理
+ *   - 删除当前项目时清空 currentProject 并提示
  */
 
 import { ref, computed, onMounted } from 'vue'
@@ -80,11 +73,13 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Search } from '@element-plus/icons-vue'
 
 import { getProjectListAPI, deleteProjectAPI } from '@/api/project'
+import { useProjectStore } from '@/store/project'
 import ProjectCard from './components/ProjectCard.vue'
 import NewProjectCard from './components/NewProjectCard.vue'
 import ProjectFormDialog from './components/ProjectFormDialog.vue'
 
 const router = useRouter()
+const projectStore = useProjectStore()
 
 // ========== 列表数据 ==========
 const allProjects = ref([])
@@ -96,8 +91,25 @@ const fetchProjects = async () => {
   try {
     const list = await getProjectListAPI()
     allProjects.value = Array.isArray(list) ? list : []
+
+    // 同步：如果 currentProject 被外部删了 / 不在列表里，清掉
+    if (projectStore.hasCurrentProject) {
+      const stillExists = allProjects.value.some(
+        (p) => p.id === projectStore.currentProjectId
+      )
+      if (!stillExists) {
+        projectStore.clearCurrentProject()
+      } else {
+        // 名字可能被改过，同步一下
+        const fresh = allProjects.value.find(
+          (p) => p.id === projectStore.currentProjectId
+        )
+        if (fresh && fresh.name !== projectStore.currentProjectName) {
+          projectStore.syncProjectName(fresh.name)
+        }
+      }
+    }
   } catch (error) {
-    // request.js 已统一 toast
     console.error('获取项目列表失败:', error)
     allProjects.value = []
   } finally {
@@ -116,6 +128,13 @@ const filteredProjects = computed(() => {
     )
   })
 })
+
+// ========== 进入项目 ==========
+function onEnter(project) {
+  projectStore.setCurrentProject(project)
+  // 进入项目工作区，默认跳"环境管理"
+  router.push({ path: '/environment', query: { projectId: project.id } })
+}
 
 // ========== 新建 / 编辑对话框 ==========
 const dialogVisible = ref(false)
@@ -145,24 +164,22 @@ const onDeleteClick = (project) => {
     .then(async () => {
       try {
         await deleteProjectAPI(project.id)
-        ElMessage.success('项目已删除')
+
+        // 若删的是当前项目，清空工作区上下文
+        const isCurrent = projectStore.currentProjectId === project.id
+        if (isCurrent) {
+          projectStore.clearCurrentProject()
+          ElMessage.info('当前项目已删除，请重新选择项目')
+        } else {
+          ElMessage.success('项目已删除')
+        }
+
         await fetchProjects()
       } catch (error) {
         console.error('删除项目失败:', error)
       }
     })
     .catch(() => {})
-}
-
-// ========== 项目内子模块跳转 ==========
-const goEnvironment = (project) => {
-  router.push({ path: '/environment', query: { projectId: project.id } })
-}
-const goApi = (project) => {
-  router.push({ path: '/api', query: { projectId: project.id } })
-}
-const goCase = (project) => {
-  router.push({ path: '/case', query: { projectId: project.id } })
 }
 
 // ========== 生命周期 ==========

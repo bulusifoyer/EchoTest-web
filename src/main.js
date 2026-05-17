@@ -33,5 +33,10 @@ app.use(ElementPlus)
 app.use(router)
 app.use(pinia)
 
+// 在路由守卫首次执行前，从 localStorage 恢复"当前项目"工作区上下文
+// （依赖 pinia 已 use；首次路由解析发生在 mount 内）
+import { useProjectStore } from '@/store/project'
+useProjectStore().restoreCurrentProject()
+
 // 挂载应用
 app.mount('#app')

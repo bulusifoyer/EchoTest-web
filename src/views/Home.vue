@@ -3,6 +3,27 @@
     <!-- ========== 顶栏 ========== -->
     <header class="layout-header">
       <div class="layout-header__title">分层自动化接口测试平台</div>
+
+      <!-- 中部：当前项目（仅项目内页面显示） -->
+      <div class="layout-header__center">
+        <div
+          v-if="showCurrentProject"
+          class="ws-chip"
+        >
+          <el-icon class="ws-chip__icon"><FolderOpened /></el-icon>
+          <span class="ws-chip__label">当前项目</span>
+          <span class="ws-chip__name">{{ projectStore.currentProjectName || '#' + projectStore.currentProjectId }}</span>
+          <el-button
+            type="primary"
+            link
+            size="small"
+            @click="onSwitchProject"
+          >
+            切换项目
+          </el-button>
+        </div>
+      </div>
+
       <div class="layout-header__user">
         <el-dropdown @command="handleCommand">
           <span class="user-trigger">
@@ -50,10 +71,9 @@
 
 <script setup>
 /**
- * 主布局组件（阶段 0 重写）
- * - 顶栏 56px 白底 + 标题 + 用户下拉
- * - 侧栏 200px 白底 + 7 项菜单（选中浅蓝 #ECF5FF + 字 #409EFF）
- * - 主体 #F5F7FA 浅灰背景，路由内容区
+ * 主布局组件
+ * 阶段 3.5：顶栏中部增加"当前项目 · 切换项目"chip；项目内菜单的"无项目"
+ *           拦截已由 router 守卫统一处理（meta.requireProject），此处不重复。
  */
 
 import { computed } from 'vue'
@@ -70,10 +90,12 @@ import {
   DataAnalysis
 } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
+import { useProjectStore } from '@/store/project'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
+const projectStore = useProjectStore()
 
 // 当前激活菜单（按当前路径前缀匹配，支持二级路由高亮父菜单）
 const activeMenu = computed(() => {
@@ -85,6 +107,14 @@ const activeMenu = computed(() => {
 const usernameDisplay = computed(() => userStore.userInfo?.username || '用户')
 const usernameInitial = computed(() => (usernameDisplay.value || '?').charAt(0).toUpperCase())
 
+// "当前项目"chip 的显示规则：
+//   - 已选项目（store 有 currentProject）
+//   - 当前路径不是项目管理（避免在项目选择页干扰）
+const showCurrentProject = computed(() => {
+  if (!projectStore.hasCurrentProject) return false
+  return route.path !== '/project'
+})
+
 // 菜单 ↔ 路由映射，对照参考截图顺序
 const menuItems = [
   { path: '/dashboard', label: '首页', icon: HomeFilled },
@@ -95,6 +125,10 @@ const menuItems = [
   { path: '/execution', label: '任务执行', icon: VideoPlay },
   { path: '/report', label: '测试报告', icon: DataAnalysis }
 ]
+
+function onSwitchProject() {
+  router.push('/project')
+}
 
 const handleCommand = (command) => {
   if (command === 'logout') {
@@ -112,6 +146,7 @@ const handleLogout = () => {
   })
     .then(() => {
       userStore.logout()
+      projectStore.clearCurrentProject()
       ElMessage.success('已退出登录')
       router.push('/login')
     })
@@ -137,15 +172,60 @@ const handleLogout = () => {
   padding: 0 24px;
   background: var(--et-bg-card);
   border-bottom: 1px solid var(--et-border-card);
+  gap: 16px;
 }
 .layout-header__title {
   font-size: 18px;
   font-weight: 600;
   color: var(--et-text-1);
+  flex-shrink: 0;
 }
+
+/* 中部：当前项目 chip */
+.layout-header__center {
+  flex: 1;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding-left: 24px;
+  min-width: 0;
+}
+.ws-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px;
+  background: var(--et-bg-active);
+  border: 1px solid var(--et-border-active);
+  border-radius: 16px;
+  color: var(--et-primary);
+  font-size: 13px;
+  max-width: 100%;
+  overflow: hidden;
+}
+.ws-chip__icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.ws-chip__label {
+  color: var(--et-text-4);
+  font-size: 12px;
+  flex-shrink: 0;
+}
+.ws-chip__name {
+  font-weight: 500;
+  color: var(--et-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
 .layout-header__user {
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 .user-trigger {
   display: flex;

@@ -249,7 +249,7 @@
  */
 
 import { ref, reactive, nextTick } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Loading, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 import { useUserStore } from '@/store/user'
@@ -258,6 +258,7 @@ import { loginAPI, registerAPI, checkUsernameAPI, checkEmailAPI } from '@/api/au
 // ========== 路由和状态管理 ==========
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
 // ========== 标签页状态 ==========
@@ -339,8 +340,9 @@ const handleLogin = async () => {
       duration: 2000
     })
 
-    // 跳转到首页
-    router.push('/')
+    // 登录成功跳转：保留 redirect query（被守卫拦截后回填的），否则进项目管理
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
+    router.push(redirect || '/project')
   } catch (error) {
     // 错误已经在 request 拦截器中处理，这里可以补充特定逻辑
     console.error('登录失败:', error)

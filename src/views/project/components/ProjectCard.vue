@@ -1,5 +1,5 @@
 <template>
-  <div class="proj-card">
+  <div class="proj-card" @click="$emit('enter', project)">
     <!-- 头部：图标块 + 名称/描述 + 操作菜单 -->
     <div class="pc-head">
       <div :class="['pc-icon', `pc-icon--c${colorIndex}`]">
@@ -9,16 +9,14 @@
         <div class="pc-title__name">{{ project.name }}</div>
         <div class="pc-title__desc">{{ project.description || '暂无描述' }}</div>
       </div>
-      <el-dropdown trigger="click" @command="onCommand">
+      <!-- ⋯ 操作菜单（仅编辑 / 删除）：点击时 stop，避免误触卡片进入 -->
+      <el-dropdown trigger="click" @command="onCommand" @click.stop>
         <span class="pc-more" @click.stop>
           <el-icon><MoreFilled /></el-icon>
         </span>
         <template #dropdown>
           <el-dropdown-menu>
-            <el-dropdown-item command="env">环境管理</el-dropdown-item>
-            <el-dropdown-item command="api">接口管理</el-dropdown-item>
-            <el-dropdown-item command="case">用例管理</el-dropdown-item>
-            <el-dropdown-item divided command="edit">编辑项目</el-dropdown-item>
+            <el-dropdown-item command="edit">编辑项目</el-dropdown-item>
             <el-dropdown-item command="delete">
               <span class="pc-more__danger">删除项目</span>
             </el-dropdown-item>
@@ -43,11 +41,15 @@
       </div>
     </div>
 
-    <!-- 底部：更新时间 -->
+    <!-- 底部：更新时间 + hover 出现"进入项目"链接 -->
     <div class="pc-foot">
       <span class="pc-foot__status">
         <span class="pc-foot__dot"></span>
         更新于 {{ relativeTime(project.updateTime) }}
+      </span>
+      <span class="pc-foot__enter">
+        进入项目
+        <el-icon class="pc-foot__enter-icon"><ArrowRight /></el-icon>
       </span>
     </div>
   </div>
@@ -57,17 +59,20 @@
 /**
  * 项目卡片组件
  * 视觉对照 docs/screenshots/html/project_management.html
- * MVP：统计字段以 — 占位，等 M3 执行报告完成后再回填真实数据
+ * 阶段 3.5：
+ *   - 卡片整体可点 → emit('enter', project)
+ *   - ⋯ 下拉收敛为「编辑 / 删除」；环境/接口/用例三项移除（侧栏统一入口）
+ *   - 右下角 hover 出现"进入项目 →"小链接，增强可发现性
  */
 import { computed } from 'vue'
-import { MoreFilled } from '@element-plus/icons-vue'
+import { MoreFilled, ArrowRight } from '@element-plus/icons-vue'
 import { relativeTime } from '@/utils/format'
 
 const props = defineProps({
   project: { type: Object, required: true }
 })
 
-const emit = defineEmits(['edit', 'delete', 'open-env', 'open-api', 'open-case'])
+const emit = defineEmits(['edit', 'delete', 'enter'])
 
 // 图标块颜色：按 id % 6 映射 c1~c6（与截图一致）
 const colorIndex = computed(() => {
@@ -84,13 +89,8 @@ const initial = computed(() => {
 const statTooltip = '执行报告功能上线后自动统计'
 
 const onCommand = (cmd) => {
-  switch (cmd) {
-    case 'env':    emit('open-env', props.project); break
-    case 'api':    emit('open-api', props.project); break
-    case 'case':   emit('open-case', props.project); break
-    case 'edit':   emit('edit', props.project); break
-    case 'delete': emit('delete', props.project); break
-  }
+  if (cmd === 'edit') emit('edit', props.project)
+  else if (cmd === 'delete') emit('delete', props.project)
 }
 </script>
 
@@ -101,6 +101,7 @@ const onCommand = (cmd) => {
   border-radius: 8px;
   padding: 18px;
   transition: border-color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
 }
 .proj-card:hover {
   border-color: var(--et-primary);
@@ -199,7 +200,7 @@ const onCommand = (cmd) => {
 .pc-foot {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   margin-top: 12px;
   font-size: 12px;
   color: var(--et-text-4);
@@ -215,5 +216,25 @@ const onCommand = (cmd) => {
   height: 6px;
   border-radius: 50%;
   background: var(--et-success);
+}
+
+/* 进入项目链接：默认隐藏，hover 卡片时显现 */
+.pc-foot__enter {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--et-primary);
+  font-size: 12px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.2s, transform 0.2s;
+}
+.proj-card:hover .pc-foot__enter {
+  opacity: 1;
+  transform: translateX(0);
+}
+.pc-foot__enter-icon {
+  font-size: 12px;
 }
 </style>
