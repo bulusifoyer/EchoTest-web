@@ -20,6 +20,8 @@ const Placeholder = () => import('@/views/Placeholder.vue')
 const Project = () => import('@/views/project/index.vue')
 const Environment = () => import('@/views/environment/index.vue')
 const ApiManagement = () => import('@/views/api/index.vue')
+const CaseList = () => import('@/views/case/index.vue')
+const CaseEditor = () => import('@/views/case/editor.vue')
 
 const routes = [
   {
@@ -56,13 +58,14 @@ const routes = [
       {
         path: 'case',
         name: 'CaseManagement',
-        component: Placeholder,
-        meta: {
-          title: '用例管理',
-          moduleName: '用例管理与编辑',
-          stage: '阶段 5',
-          requireProject: true
-        }
+        component: CaseList,
+        meta: { title: '用例管理', requireProject: true }
+      },
+      {
+        path: 'case/edit',
+        name: 'CaseEditor',
+        component: CaseEditor,
+        meta: { title: '用例编辑', requireProject: true }
       },
       {
         path: 'execution',
