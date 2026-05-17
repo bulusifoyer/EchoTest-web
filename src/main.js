@@ -4,9 +4,17 @@
  */
 
 import { createApp } from 'vue'
+
+// 1. 设计 tokens（须最先，使 Element Plus override 生效）
+import './styles/tokens.css'
+
+// 2. Element Plus 框架样式
 import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+
+// 3. 全局基线样式（在 element 之后，可覆盖）
+import './styles/global.css'
 
 import App from './App.vue'
 import router from './router'

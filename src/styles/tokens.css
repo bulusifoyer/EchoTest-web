@@ -1,0 +1,80 @@
+/**
+ * EchoTest 设计 Tokens
+ * 所有页面共用，对照 docs/screenshots/_common.css 抽取
+ * Element Plus 主题变量在此 override，确保 Element 组件本身也跟 tokens 走
+ */
+
+:root {
+  /* ========== 主色与功能色 ========== */
+  --et-primary: #409eff;
+  --et-primary-hover: #66b1ff;
+  --et-success: #67c23a;
+  --et-warning: #e6a23c;
+  --et-danger: #f56c6c;
+  --et-info: #909399;
+
+  /* ========== 文字色（4 级） ========== */
+  --et-text-1: #1f2937; /* 一级标题 */
+  --et-text-2: #303133; /* 正文 */
+  --et-text-3: #606266; /* 次要 */
+  --et-text-4: #909399; /* 弱化 / 占位 */
+  --et-text-5: #c0c4cc; /* 极弱 */
+
+  /* ========== 背景色 ========== */
+  --et-bg-page: #f5f7fa;     /* 页面主体 */
+  --et-bg-card: #ffffff;     /* 卡片 */
+  --et-bg-table-head: #fafafa;
+  --et-bg-hover: #fafcff;
+  --et-bg-active: #ecf5ff;   /* 选中浅蓝 */
+
+  /* ========== 边框色 ========== */
+  --et-border-card: #ebeef5;     /* 卡片 / 分割线 */
+  --et-border-input: #dcdfe6;    /* 输入框 */
+  --et-border-soft: #f0f0f0;     /* 表格行分隔 */
+  --et-border-active: #b3d8ff;   /* 选中边框 */
+
+  /* ========== 圆角 ========== */
+  --et-radius-card: 6px;
+  --et-radius-btn: 4px;
+  --et-radius-tag: 3px;
+  --et-radius-pill: 13px;
+
+  /* ========== 间距 ========== */
+  --et-gap-card: 16px;
+  --et-pad-content: 20px;
+
+  /* ========== 布局尺寸 ========== */
+  --et-header-h: 56px;
+  --et-aside-w: 200px;
+  --et-menu-h: 40px;
+
+  /* ========== 字体 ========== */
+  --et-font: -apple-system, "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --et-font-mono: "SF Mono", Menlo, Consolas, monospace;
+
+  /* ========== Element Plus 主题对齐 ========== */
+  --el-color-primary: var(--et-primary);
+  --el-color-primary-light-3: #79bbff;
+  --el-color-primary-light-5: #a0cfff;
+  --el-color-primary-light-7: #c6e2ff;
+  --el-color-primary-light-8: #d9ecff;
+  --el-color-primary-light-9: var(--et-bg-active);
+  --el-color-success: var(--et-success);
+  --el-color-warning: var(--et-warning);
+  --el-color-danger: var(--et-danger);
+  --el-color-info: var(--et-info);
+
+  --el-text-color-primary: var(--et-text-2);
+  --el-text-color-regular: var(--et-text-3);
+  --el-text-color-secondary: var(--et-text-4);
+  --el-text-color-placeholder: var(--et-text-5);
+
+  --el-border-color: var(--et-border-card);
+  --el-border-color-light: var(--et-border-card);
+  --el-border-color-lighter: var(--et-border-soft);
+
+  --el-bg-color: var(--et-bg-card);
+  --el-bg-color-page: var(--et-bg-page);
+
+  --el-border-radius-base: var(--et-radius-btn);
+}

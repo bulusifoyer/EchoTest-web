@@ -1,0 +1,92 @@
+/**
+ * EchoTest 全局基线样式
+ * 在 tokens.css 与 element-plus 之后加载，可覆盖默认值
+ */
+
+/* ========== 基线 reset ========== */
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+body {
+  font-family: var(--et-font);
+  color: var(--et-text-2);
+  background: var(--et-bg-page);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ========== 通用工具类 ========== */
+.et-card {
+  background: var(--et-bg-card);
+  border: 1px solid var(--et-border-card);
+  border-radius: var(--et-radius-card);
+  padding: var(--et-pad-content);
+}
+.et-mono {
+  font-family: var(--et-font-mono);
+}
+.et-muted {
+  color: var(--et-text-4);
+}
+.et-title-h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--et-text-1);
+}
+.et-flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ========== 面包屑 ========== */
+.et-breadcrumb {
+  color: var(--et-text-3);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.et-breadcrumb .sep {
+  color: var(--et-text-5);
+  margin: 0 6px;
+}
+.et-breadcrumb .cur {
+  color: var(--et-text-2);
+}
+
+/* ========== Method / 状态 标签（直接对照 _common.css） ========== */
+.et-tag {
+  display: inline-block;
+  height: 22px;
+  line-height: 20px;
+  padding: 0 8px;
+  font-size: 12px;
+  border-radius: var(--et-radius-tag);
+  border: 1px solid;
+  white-space: nowrap;
+}
+.et-tag--get  { color: #409eff; background: #ecf5ff; border-color: #b3d8ff; }
+.et-tag--post { color: #67c23a; background: #f0f9eb; border-color: #c2e7b0; }
+.et-tag--put  { color: #e6a23c; background: #fdf6ec; border-color: #f5dab1; }
+.et-tag--del  { color: #f56c6c; background: #fef0f0; border-color: #fbc4c4; }
+.et-tag--pass { color: #67c23a; background: #f0f9eb; border-color: #c2e7b0; }
+.et-tag--fail { color: #f56c6c; background: #fef0f0; border-color: #fbc4c4; }
+.et-tag--skip { color: #909399; background: #f4f4f5; border-color: #d3d4d6; }
+
+/* ========== 滚动条收敛 ========== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-thumb {
+  background: #d3d6db;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #b1b3b8;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
