@@ -12,6 +12,7 @@ const Home = () => import('@/views/Home.vue')
 const Welcome = () => import('@/views/Welcome.vue')
 const Placeholder = () => import('@/views/Placeholder.vue')
 const Project = () => import('@/views/project/index.vue')
+const Environment = () => import('@/views/environment/index.vue')
 
 const routes = [
   {
@@ -36,8 +37,8 @@ const routes = [
       {
         path: 'environment',
         name: 'Environment',
-        component: Placeholder,
-        meta: { title: '环境管理', moduleName: '环境管理', stage: '阶段 3' }
+        component: Environment,
+        meta: { title: '环境管理' }
       },
       {
         path: 'api',
