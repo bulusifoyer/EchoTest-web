@@ -60,14 +60,24 @@
           </template>
         </el-table-column>
         <el-table-column prop="updateTime" label="最后更新" width="180" />
-        <el-table-column label="操作" width="160" align="center" fixed="right">
+        <el-table-column label="操作" width="220" align="center" fixed="right">
           <template #default="{ row }">
+            <el-button link type="primary" size="small" @click.stop="onExecute(row)">▶ 执行</el-button>
             <el-button link type="primary" size="small" @click.stop="onEdit(row)">编辑</el-button>
             <el-button link type="danger" size="small" @click.stop="onDelete(row)">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
     </div>
+
+    <!-- 执行用例对话框（与 /execution、/case/edit 共用） -->
+    <ExecuteEnvDialog
+      v-model="execDialogVisible"
+      :case-id="executingCase?.id"
+      :case-name="executingCase?.caseName"
+      :project-id="projectId"
+      @success="onExecuted"
+    />
   </div>
 </template>
 
@@ -88,6 +98,8 @@ import { getProjectDetailAPI } from '@/api/project'
 import { getCaseListAPI, deleteCaseAPI } from '@/api/testCase'
 import { useProjectStore } from '@/store/project'
 import { resolveProjectId } from '@/utils/projectContext'
+
+import ExecuteEnvDialog from '@/components/ExecuteEnvDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -153,6 +165,21 @@ function onCreate() {
 
 function onEdit(row) {
   router.push({ path: '/case/edit', query: { projectId: projectId.value, caseId: row.id } })
+}
+
+const execDialogVisible = ref(false)
+const executingCase = ref(null)
+
+function onExecute(row) {
+  executingCase.value = row
+  execDialogVisible.value = true
+}
+
+function onExecuted(reportId) {
+  router.push({
+    path: '/report/detail',
+    query: { reportId, projectId: projectId.value }
+  })
 }
 
 function onRowClick(row) {

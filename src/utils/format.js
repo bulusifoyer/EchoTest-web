@@ -96,3 +96,24 @@ export function formatBytes(bytes) {
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(2)} KB`
   return `${(bytes / 1024 / 1024).toFixed(2)} MB`
 }
+
+/**
+ * 把毫秒数格式化为更易读的耗时（例：'324 ms' / '1.83 s' / '2 m 17 s'）
+ * - 0 / 负数 / 非数字 → '—'
+ * - <1000 ms      → 'XXX ms'
+ * - <60 s         → 'X.XX s'
+ * - 否则           → 'X m YY s'
+ * @param {number|null|undefined} ms
+ * @returns {string}
+ */
+export function formatDuration(ms) {
+  if (ms == null || Number.isNaN(Number(ms))) return '—'
+  const n = Number(ms)
+  if (n <= 0) return '0 ms'
+  if (n < 1000) return `${Math.round(n)} ms`
+  const seconds = n / 1000
+  if (seconds < 60) return `${seconds.toFixed(2)} s`
+  const m = Math.floor(seconds / 60)
+  const s = Math.round(seconds - m * 60)
+  return `${m} m ${s} s`
+}

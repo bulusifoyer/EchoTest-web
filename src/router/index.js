@@ -22,6 +22,9 @@ const Environment = () => import('@/views/environment/index.vue')
 const ApiManagement = () => import('@/views/api/index.vue')
 const CaseList = () => import('@/views/case/index.vue')
 const CaseEditor = () => import('@/views/case/editor.vue')
+const Execution = () => import('@/views/execution/index.vue')
+const ReportList = () => import('@/views/report/index.vue')
+const ReportDetail = () => import('@/views/report/detail.vue')
 
 const routes = [
   {
@@ -70,24 +73,20 @@ const routes = [
       {
         path: 'execution',
         name: 'Execution',
-        component: Placeholder,
-        meta: {
-          title: '任务执行',
-          moduleName: '任务执行',
-          stage: '阶段 6 / 7',
-          requireProject: true
-        }
+        component: Execution,
+        meta: { title: '任务执行', requireProject: true }
       },
       {
         path: 'report',
         name: 'Report',
-        component: Placeholder,
-        meta: {
-          title: '测试报告',
-          moduleName: '测试报告',
-          stage: '阶段 7',
-          requireProject: true
-        }
+        component: ReportList,
+        meta: { title: '测试报告', requireProject: true }
+      },
+      {
+        path: 'report/detail',
+        name: 'ReportDetail',
+        component: ReportDetail,
+        meta: { title: '报告详情', requireProject: true }
       }
     ]
   },

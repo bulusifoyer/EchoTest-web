@@ -15,11 +15,19 @@
       <div class="editor-header__ops">
         <el-button @click="goList">取消</el-button>
         <el-tooltip
-          content="执行引擎将在阶段 6（M3）完成后启用"
+          :content="runDisabledTip"
           placement="bottom"
+          :disabled="!runDisabled"
         >
           <span>
-            <el-button type="warning" :icon="VideoPlay" disabled>调试运行</el-button>
+            <el-button
+              type="warning"
+              :icon="VideoPlay"
+              :disabled="runDisabled"
+              @click="onExecute"
+            >
+              ▶ 执行用例
+            </el-button>
           </span>
         </el-tooltip>
         <el-button type="primary" :icon="Document" :loading="saving" @click="onSave">
@@ -49,6 +57,16 @@
         @pick-assertion="onPickAssertion"
       />
     </div>
+
+    <!-- 执行用例对话框（与 /execution、/case 共用） -->
+    <ExecuteEnvDialog
+      v-model="execDialogVisible"
+      :case-id="caseId"
+      :case-name="caseForm.caseName"
+      :project-id="projectId"
+      :prefer-env-id="selectedEnvId"
+      @success="onExecuted"
+    />
   </div>
 </template>
 
@@ -77,6 +95,7 @@ import { resolveProjectId } from '@/utils/projectContext'
 import CaseMetaCard from './components/CaseMetaCard.vue'
 import StepList from './components/StepList.vue'
 import SideContext from './components/SideContext.vue'
+import ExecuteEnvDialog from '@/components/ExecuteEnvDialog.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -328,6 +347,29 @@ async function onSave() {
 
 function goList() {
   router.push({ path: '/case', query: { projectId: projectId.value } })
+}
+
+// ---------- 执行用例（接入阶段 7 ExecuteEnvDialog） ----------
+
+const execDialogVisible = ref(false)
+
+const runDisabled = computed(() => isNew.value || saving.value)
+const runDisabledTip = computed(() => {
+  if (isNew.value) return '请先保存用例后再执行'
+  if (saving.value) return '正在保存，请稍候'
+  return ''
+})
+
+function onExecute() {
+  if (runDisabled.value) return
+  execDialogVisible.value = true
+}
+
+function onExecuted(reportId) {
+  router.push({
+    path: '/report/detail',
+    query: { reportId, projectId: projectId.value }
+  })
 }
 </script>
 
