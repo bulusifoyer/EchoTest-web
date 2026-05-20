@@ -5,6 +5,9 @@
  *   - report.status: RUNNING / PASSED / FAILED
  *   - detail.status: PASSED / FAILED
  *
+ * 注意：request.js 的 baseURL 已经是 'http://localhost:8080/api'，
+ *       这里 url 必须以 '/executions' 开头，**不要**再写 '/api/executions'。
+ *
  * @author 测试平台前端
  * @since 2026-05-18
  */
@@ -17,7 +20,7 @@ import request from '@/utils/request'
  */
 export function runExecutionAPI(payload) {
   return request({
-    url: '/api/executions/run',
+    url: '/executions/run',
     method: 'post',
     data: payload
   })
@@ -30,7 +33,7 @@ export function runExecutionAPI(payload) {
  */
 export function getReportDetailAPI(reportId) {
   return request({
-    url: `/api/executions/${reportId}`,
+    url: `/executions/${reportId}`,
     method: 'get'
   })
 }
@@ -42,7 +45,7 @@ export function getReportDetailAPI(reportId) {
  */
 export function listReportsByProjectAPI(projectId) {
   return request({
-    url: `/api/executions/list/${projectId}`,
+    url: `/executions/list/${projectId}`,
     method: 'get'
   })
 }
@@ -53,7 +56,7 @@ export function listReportsByProjectAPI(projectId) {
  */
 export function deleteReportAPI(reportId) {
   return request({
-    url: `/api/executions/${reportId}`,
+    url: `/executions/${reportId}`,
     method: 'delete'
   })
 }
